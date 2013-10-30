@@ -78,10 +78,9 @@
 #endif
 /*---------------------------------------------------------------------------*/
 /* Local RF Flags */
-#define RX_ACTIVE     0x80
-#define RF_MUST_RESET 0x40
-#define WAS_OFF       0x10
-#define RF_ON         0x01
+#define RX_ACTIVE  0x80
+#define WAS_OFF    0x10
+#define RF_ON      0x01
 
 /* Bit Masks for the last byte in the RX FIFO */
 #define CRC_BIT_MASK 0x80
@@ -513,8 +512,15 @@ read(void *buf, unsigned short bufsize)
     CC2538_RF_CSP_ISFLUSHRX();
     return 0;
   }
-
+#if CC2538_RF_CONF_SNIFFER
   /* If we reach here, chances are the FIFO is holding a valid frame */
+  write_byte(magic[0]);
+  write_byte(magic[1]);
+  write_byte(magic[2]);
+  write_byte(magic[3]);
+  write_byte(len);
+#endif
+
   PRINTF("RF: read (0x%02x bytes) = ", len);
   len -= CHECKSUM_LEN;
 
@@ -541,6 +547,9 @@ read(void *buf, unsigned short bufsize)
   } else {
     for(i = 0; i < len; ++i) {
       ((unsigned char *)(buf))[i] = REG(RFCORE_SFR_RFDATA);
+#if CC2538_RF_CONF_SNIFFER
+      write_byte(((unsigned char *)(buf))[i]);
+#endif
       PRINTF("%02x", ((unsigned char *)(buf))[i]);
     }
   }
@@ -550,6 +559,12 @@ read(void *buf, unsigned short bufsize)
   crc_corr = REG(RFCORE_SFR_RFDATA);
 
   PRINTF("%02x%02x\n", (uint8_t)rssi, crc_corr);
+
+#if CC2538_RF_CONF_SNIFFER
+  write_byte(rssi);
+  write_byte(crc_corr);
+  flush();
+#endif
 
   /* MS bit CRC OK/Not OK, 7 LS Bits, Correlation value */
   if(crc_corr & CRC_BIT_MASK) {
@@ -563,27 +578,11 @@ read(void *buf, unsigned short bufsize)
     return 0;
   }
 
-#if CC2538_RF_CONF_SNIFFER
-  write_byte(magic[0]);
-  write_byte(magic[1]);
-  write_byte(magic[2]);
-  write_byte(magic[3]);
-  write_byte(len + 2);
-  for(i = 0; i < len; ++i) {
-    write_byte(((unsigned char *)(buf))[i]);
-  }
-  write_byte(rssi);
-  write_byte(crc_corr);
-  flush();
-#endif
-
   /* If FIFOP==1 and FIFO==0 then we had a FIFO overflow at some point. */
-  if(REG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_FIFOP) {
-    if(REG(RFCORE_XREG_FSMSTAT1) & RFCORE_XREG_FSMSTAT1_FIFO) {
-      process_poll(&cc2538_rf_process);
-    } else {
-      CC2538_RF_CSP_ISFLUSHRX();
-    }
+  if((REG(RFCORE_XREG_FSMSTAT1)
+      & (RFCORE_XREG_FSMSTAT1_FIFO | RFCORE_XREG_FSMSTAT1_FIFOP))
+     == RFCORE_XREG_FSMSTAT1_FIFOP) {
+    CC2538_RF_CSP_ISFLUSHRX();
   }
 
   return (len);
@@ -652,14 +651,6 @@ PROCESS_THREAD(cc2538_rf_process, ev, data)
 
       NETSTACK_RDC.input();
     }
-
-    /* If we were polled due to an RF error, reset the transceiver */
-    if(rf_flags & RF_MUST_RESET) {
-      rf_flags = 0;
-
-      off();
-      init();
-    }
   }
 
   PROCESS_END();
@@ -691,15 +682,7 @@ cc2538_rf_rx_tx_isr(void)
  *        This is the interrupt service routine for all RF errors. We
  *        acknowledge every error type and instead of trying to be smart and
  *        act differently depending on error condition, we simply reset the
- *        transceiver. RX FIFO overflow is an exception, we ignore this error
- *        since read() handles it anyway.
- *
- *        However, we don't want to reset within this ISR. If the error occurs
- *        while we are reading a frame out of the FIFO, trashing the FIFO in
- *        the middle of read(), would result in further errors (RX underflows).
- *
- *        Instead, we set a flag and poll the driver process. The process will
- *        reset the transceiver without any undesirable consequences.
+ *        transceiver
  */
 void
 cc2538_rf_err_isr(void)
@@ -708,14 +691,12 @@ cc2538_rf_err_isr(void)
 
   PRINTF("RF Error: 0x%08lx\n", REG(RFCORE_SFR_RFERRF));
 
-  /* If the error is not an RX FIFO overflow, set a flag */
-  if(REG(RFCORE_SFR_RFERRF) != RFCORE_SFR_RFERRF_RXOVERF) {
-    rf_flags |= RF_MUST_RESET;
-  }
-
   REG(RFCORE_SFR_RFERRF) = 0;
 
-  process_poll(&cc2538_rf_process);
+  rf_flags = 0;
+
+  off();
+  init();
 
   ENERGEST_OFF(ENERGEST_TYPE_IRQ);
 }

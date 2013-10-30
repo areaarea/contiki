@@ -32,7 +32,6 @@
 #ifndef UIP_DS6_ROUTE_H
 #define UIP_DS6_ROUTE_H
 
-#include "sys/stimer.h"
 #include "lib/list.h"
 
 void uip_ds6_route_init(void);

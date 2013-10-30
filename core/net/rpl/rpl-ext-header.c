@@ -83,6 +83,7 @@ rpl_verify_header(int uip_ext_opt_offset)
   }
 
   if(UIP_EXT_HDR_OPT_RPL_BUF->flags & RPL_HDR_OPT_FWD_ERR) {
+    PRINTF("RPL: Forward error!\n");
     /* We should try to repair it by removing the neighbor that caused
        the packet to be forwareded in the first place. We drop any
        routes that go through the neighbor that sent the packet to
@@ -340,18 +341,6 @@ rpl_invert_header(void)
     PRINTF("RPL: Multi Hop-by-hop options not implemented\n");
     uip_ext_len = last_uip_ext_len;
     return 0;
-  }
-}
-/*---------------------------------------------------------------------------*/
-void
-rpl_insert_header(void)
-{
-  uint8_t uip_ext_opt_offset;
-  if(default_instance != NULL) {
-    uip_ext_opt_offset = 2;
-    if(UIP_EXT_HDR_OPT_BUF->type == UIP_EXT_HDR_OPT_RPL) {
-      rpl_update_header_empty();
-    }
   }
 }
 /*---------------------------------------------------------------------------*/

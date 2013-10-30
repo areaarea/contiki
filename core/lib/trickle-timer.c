@@ -276,9 +276,7 @@ fire(void *ptr)
     loctt->cb(loctt->cb_arg, TRICKLE_TIMER_PROTO_TX_ALLOW(loctt));
   }
 
-  if(trickle_timer_is_running(loctt)) {
-    schedule_for_end(loctt);
-  }
+  schedule_for_end(loctt);
 }
 /*---------------------------------------------------------------------------*/
 /* New trickle interval, either due to a newly set trickle timer or due to an

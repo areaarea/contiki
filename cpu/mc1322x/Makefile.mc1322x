@@ -73,12 +73,8 @@ CFLAGS += -I$(OBJECTDIR) -I$(CONTIKI_CPU)/board -DBOARD=$(TARGET)
 CPPFLAGS += -P -C ${addprefix -D,${subst $(COMMA), ,$(DEFINES)}}
 
 
-$(OBJECTDIR)/board.h: $(CONTIKI_CPU)/board/board.h | $(OBJECTDIR)
-ifeq ($(HOST_OS),Windows)
-	ln -f $< $@
-else
-	ln -sf ../$< $@
-endif
+$(OBJECTDIR)/board.h: $(OBJECTDIR) 
+	cp $(CONTIKI_CPU)/board/board.h $(OBJECTDIR)/board.h
 
 $(OBJECTDIR)/%.lds: $(CONTIKI_CPU)/%.lds.S | $(OBJECTDIR)
 	$(CPP) $(CPPFLAGS) $< > $@

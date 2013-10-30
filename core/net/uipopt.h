@@ -144,7 +144,11 @@
  *
  * This should normally not be changed.
  */
+#ifdef UIP_CONF_TTL
+#define UIP_TTL         UIP_CONF_TTL
+#else /* UIP_CONF_TTL */
 #define UIP_TTL         64
+#endif /* UIP_CONF_TTL */
 
 /**
  * The maximum time an IP fragment should wait in the reassembly
@@ -281,15 +285,15 @@
  */
 
 /**
- * Toggles whether TCP support should be compiled in or not.
+ * Toggles whether UDP support should be compiled in or not.
  *
  * \hideinitializer
  */
 #ifdef UIP_CONF_TCP
 #define UIP_TCP (UIP_CONF_TCP)
-#else /* UIP_CONF_TCP */
+#else /* UIP_CONF_UDP */
 #define UIP_TCP           1
-#endif /* UIP_CONF_TCP */
+#endif /* UIP_CONF_UDP */
 
 /**
  * Determines if support for opening connections from uIP should be
@@ -512,6 +516,10 @@
 #else /* UIP_CONF_BUFFER_SIZE */
 #define UIP_BUFSIZE (UIP_CONF_BUFFER_SIZE)
 #endif /* UIP_CONF_BUFFER_SIZE */
+
+#if UIP_BUFSIZE < (UIP_TCP_MSS + UIP_LLH_LEN + UIP_TCPIP_HLEN)
+#error "UIP_BUFSIZE too small for UIP_TCP_MSS, must be at least 70 bytes bigger"
+#endif
 
 
 /**

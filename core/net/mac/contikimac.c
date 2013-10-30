@@ -54,8 +54,11 @@
 
 #include <string.h>
 
+#define WITH_DEEP_SLEEP              0
+
 /* TX/RX cycles are synchronized with neighbor wake periods */
 #ifdef CONTIKIMAC_CONF_WITH_PHASE_OPTIMIZATION
+#undef WITH_PHASE_OPTIMIZATION
 #define WITH_PHASE_OPTIMIZATION      CONTIKIMAC_CONF_WITH_PHASE_OPTIMIZATION
 #else /* CONTIKIMAC_CONF_WITH_PHASE_OPTIMIZATION */
 #define WITH_PHASE_OPTIMIZATION      1
@@ -194,7 +197,7 @@ static int we_are_receiving_burst = 0;
 #ifdef CONTIKIMAC_CONF_INTER_PACKET_INTERVAL
 #define INTER_PACKET_INTERVAL              CONTIKIMAC_CONF_INTER_PACKET_INTERVAL
 #else
-#define INTER_PACKET_INTERVAL              RTIMER_ARCH_SECOND / 2500
+#define INTER_PACKET_INTERVAL              RTIMER_ARCH_SECOND / 5000
 #endif
 
 /* AFTER_ACK_DETECTECT_WAIT_TIME is the time to wait after a potential
@@ -426,7 +429,11 @@ powercycle(struct rtimer *t, void *ptr)
       PT_YIELD(&pt);
     }
 
-    if(packet_seen) {
+    if(!packet_seen) {
+#if WITH_DEEP_SLEEP
+      NETSTACK_RADIO.sleep();
+#endif /* WITH_DEEP_SLEEP */
+    } else {
       static rtimer_clock_t start;
       static uint8_t silence_periods, periods;
       start = RTIMER_NOW();
@@ -811,6 +818,9 @@ send_packet(mac_callback_t mac_callback, void *mac_callback_ptr,
   }
 
   off();
+#if WITH_DEEP_SLEEP
+  NETSTACK_RADIO.sleep();
+#endif /* WITH_DEEP_SLEEP */
 
   PRINTF("contikimac: send (strobes=%u, len=%u, %s, %s), done\n", strobes,
          packetbuf_totlen(),

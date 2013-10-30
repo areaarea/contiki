@@ -125,7 +125,7 @@ PROCESS_THREAD(shell_bin2hex_process, ev, data)
       PROCESS_EXIT();
     }
 
-    buf = alloca((input->len1 + input->len2)*2);
+    buf = (char *)alloca((input->len1 + input->len2)*2);
 
     bufptr = buf;
     for(i = 0; i < input->len1; i++) {
@@ -170,7 +170,7 @@ PROCESS_THREAD(shell_hex2bin_process, ev, data)
       continue;
     }
 
-    buf = alloca((input->len1 + input->len2)/2+1);
+    buf = (char *)alloca((input->len1 + input->len2)/2+1);
 
     cnt = 0;
     for(i = 0; i < input->len1; i += 2) {
@@ -219,7 +219,7 @@ PROCESS_THREAD(shell_crc_process, ev, data)
     }
 
     /* input + 16-bit CRC */
-    buf = alloca(input->len2+2);
+    buf = (char *)alloca(input->len2+2);
 
     memcpy(buf, input->data2, input->len2);
     buf[input->len2] = crc&0xff;

@@ -48,8 +48,6 @@
 #include "sys/clock.h"
 #include "reg.h"
 
-#include "dev/watchdog.h"
-
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
 /* EP max FIFO sizes without double buffering */
@@ -201,7 +199,9 @@ usb_arch_get_global_events(void)
   e = events;
   events = 0;
 
-  nvic_interrupt_en_restore(NVIC_INT_USB, flag);
+  if(flag) {
+    nvic_interrupt_enable(NVIC_INT_USB);
+  }
 
   return e;
 }
@@ -1076,12 +1076,9 @@ ep_tx(uint8_t ep_hw)
     len -= copy;
     ep->buffer->left -= copy;
 
-    /*
-     * Delay somewhat if the previous packet has not yet left the IN FIFO,
-     * making sure the dog doesn't bark while we're waiting
-     */
-    while(REG(USB_CSIL) & USB_CSIL_INPKT_RDY) {
-      watchdog_periodic();
+    /* Delay somewhat if the previous packet has not yet left the IN FIFO */
+    if(REG(USB_CSIL) & USB_CSIL_INPKT_RDY) {
+      clock_delay_usec(5000);
     }
 
     write_hw_buffer(EP_INDEX(ep_hw), ep->buffer->data, copy);

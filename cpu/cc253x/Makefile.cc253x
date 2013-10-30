@@ -2,7 +2,7 @@
 CC       = sdcc
 LD       = sdcc
 AS       = sdcc
-AR       = sdar
+AR       = sdcclib
 OBJCOPY  = objcopy
 STRIP    = strip
 
@@ -18,16 +18,13 @@ CFLAGS  += --model-$(MEMORY_MODEL) --stack-auto --std-c99
 CFLAGS  +=  -DCC2530_LAST_FLASH_BANK=$(HIGH_FLASH_BANK)
 CFLAGS  += --fomit-frame-pointer
 
-### Disable warning 110 (EVELYN the modified dog) and 126 (unreachable code)
-CFLAGS += --disable-warning 110 --disable-warning 126
-
 LDFLAGS += --model-$(MEMORY_MODEL) --stack-auto --out-fmt-ihx
 LDFLAGS += --xram-loc 0x0000 --xram-size 0x1F00
 LDFLAGS += --code-loc $(START_ADDR) --code-size $(CODE_SIZE)
 
 ASFLAGS += -plosgff
 
-AROPTS   = -rc
+AROPTS   = -a
 
 ### Our object files are .rel, so we can't use the default finalize dependency
 ### generation. Override here.
@@ -150,9 +147,15 @@ CUSTOM_RULE_C_TO_OBJECTDIR_O=1
 CUSTOM_RULE_ALLOBJS_TO_TARGETLIB=1
 
 $(OBJECTDIR)/%.rel: %.c $(SEGMENT_RULES) | $(OBJECTDIR)
-	$(TRACE_CC)
-	$(Q)$(CC) $(call c_seg,$<,$@) $(CFLAGS) -c $< -o $@ -Wp,-MMD,$(@:.rel=.d),-MQ,$@
+	$(CC) $(call c_seg,$<,$@) $(CFLAGS) -c $< -o $@ -Wp,-MMD,$(@:.rel=.d),-MQ,$@
 	@$(FINALIZE_SDCC_DEPENDENCY)
+
+$(OBJECTDIR)/%.rel: %.cS | $(OBJECTDIR)
+	cp $< $(OBJECTDIR)/$*.c
+	$(CC) $(CFLAGS) -E $(OBJECTDIR)/$*.c > $(OBJECTDIR)/tmp
+	perl -pe "s/^#(.*)/;$$1/" $(OBJECTDIR)/tmp > $(OBJECTDIR)/$*.S
+	$(AS) $(ASFLAGS) -o $@ $(OBJECTDIR)/$*.S
+	rm -f $(OBJECTDIR)/tmp
 
 contiki-$(TARGET).lib: $(CONTIKI_OBJECTFILES) $(PROJECT_OBJECTFILES) \
 	$(CONTIKI_ASMOBJECTFILES) $(CONTIKI_CASMOBJECTFILES)
@@ -164,8 +167,7 @@ contiki-$(TARGET).lib: $(CONTIKI_OBJECTFILES) $(PROJECT_OBJECTFILES) \
 # build app/example local object files. We need a separate rule so that we can
 # pass -DAUTOSTART_ENABLE for those files only
 $(OBJECTDIR)/%.app.rel: %.c $(SEGMENT_RULES) | $(OBJECTDIR)
-	$(TRACE_CC)
-	$(Q)$(CC) $(call c_seg,$<,$@) -DAUTOSTART_ENABLE $(CFLAGS) -c $< -o $@
+	$(CC) $(call c_seg,$<,$@) -DAUTOSTART_ENABLE $(CFLAGS) -c $< -o $@
 
 # .ihx is the sdcc binary output file
 ifeq ($(HAVE_BANKING),1)
@@ -173,8 +175,7 @@ ifeq ($(HAVE_BANKING),1)
 %.ihx: $(OBJECTDIR)/%.app.rel $(CONTIKI_TARGET_MAIN) contiki-$(TARGET).lib
 	@echo "\nFirst Link"
 	@echo "==============="
-	$(TRACE_LD)
-	$(Q)$(CC) $(LDFLAGS) $(LD_PRE_FLAGS) -o $@ $(CONTIKI_TARGET_MAIN) $(OBJECTDIR)/$*.app.rel -llibsdcc.lib -lcontiki-$(TARGET).lib
+	$(CC) $(LDFLAGS) $(LD_PRE_FLAGS) -o $@ $(CONTIKI_TARGET_MAIN) $(OBJECTDIR)/$*.app.rel -llibsdcc.lib -lcontiki-$(TARGET).lib > /dev/null
 
 %.flags: %.ihx
 ### Allocate modules to banks and relocate object files
@@ -186,8 +187,7 @@ ifeq ($(HAVE_BANKING),1)
 ### Link again with new bank allocations
 	@echo "\nFinal Link"
 	@echo "==============="
-	$(TRACE_LD)
-	$(Q)$(LD) $(LDFLAGS) $(shell cat $<) -o $@ $(CONTIKI_TARGET_MAIN) $(OBJECTDIR)/$*.app.rel -llibsdcc.lib -lcontiki-$(TARGET).lib
+	$(CC) $(LDFLAGS) $(shell cat $<) -o $@ $(CONTIKI_TARGET_MAIN) $(OBJECTDIR)/$*.app.rel -llibsdcc.lib -lcontiki-$(TARGET).lib > /dev/null
 
 %.hex: %.banked-hex
 ### Post-process the hex file for programmers which dislike SDCC output hex format
@@ -209,8 +209,7 @@ ifeq ($(HAVE_BANKING),1)
 else
 ### Build non-banked firmware
 %.ihx: $(OBJECTDIR)/%.app.rel $(CONTIKI_TARGET_MAIN) contiki-$(TARGET).lib
-	$(TRACE_LD)
-	$(Q)$(LD) $(LDFLAGS) -o $@ $(CONTIKI_TARGET_MAIN) $(OBJECTDIR)/$*.app.rel -llibsdcc.lib -lcontiki-$(TARGET).lib
+	$(CC) $(LDFLAGS) -o $@ $(CONTIKI_TARGET_MAIN) $(OBJECTDIR)/$*.app.rel -llibsdcc.lib -lcontiki-$(TARGET).lib > /dev/null
 
 %.hex: %.ihx
 	$(PACKIHX) $< > $@

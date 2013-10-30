@@ -44,6 +44,8 @@
 #include "dev/usb-regs.h"
 #include "rtimer-arch.h"
 #include "reg.h"
+#include "lpm-conf.h"
+#include "lpm.h"
 
 #include <stdint.h>
 #include <string.h>

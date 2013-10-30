@@ -163,9 +163,9 @@ set_serial_number(void)
     lown = ieee[i] & 0x0F;
     highn = ieee[i] >> 4;
     c = lown > 9 ? 'A' + lown - 0xA : lown + '0';
-    serial_nr.string[i * 2 + 1] = c;
+    serial_nr.string[14 - i * 2 + 1] = c;
     c = highn > 9 ? 'A' + highn - 0xA : highn + '0';
-    serial_nr.string[i * 2] = c;
+    serial_nr.string[14 - i * 2] = c;
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -201,9 +201,21 @@ do_work(void)
   if(events & USB_CDC_ACM_LINE_STATE) {
     uint8_t line_state = usb_cdc_acm_get_line_state();
     PRINTF("CDC-ACM event 0x%04x, Line State = %u\n", events, line_state);
-    if(line_state & USB_CDC_ACM_DTE) {
+    if(line_state == 0) {
+      /* CDC-ACM line went down. Stop streaming */
+      enabled = 0;
+    } else if(line_state == (USB_CDC_ACM_DTE | USB_CDC_ACM_RTS)) {
       enabled = 1;
     } else {
+      /*
+       * During tests on Ubuntu and OS X, the line_state never stays == 2
+       * (USB_CDC_ACM_RTS) for too long. When always see this value when the
+       * line is in the process of going up or coming down. If we are going
+       * up, value 3 will enable us shortly. If going down, we may as well
+       * disable already.
+       *
+       * All other values: disable
+       */
       enabled = 0;
     }
   }

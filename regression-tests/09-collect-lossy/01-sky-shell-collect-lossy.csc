@@ -398,7 +398,6 @@ booted = new Array();
 received = new Array();
 hops = new Array();
 nrNodes = 20;
-toReceive = 8;
 total_received = 0;
 total_lost = 0;
 total_hops = 0;
@@ -412,10 +411,7 @@ total_latency = 0;
 nodes_starting = true;
 for(i = 1; i &lt;= nrNodes; i++) {
   booted[i] = false;
-  received[i] = '';
-  for(var j = 0; j &lt; toReceive; j++) {
-     received[i] += '_';
-  }
+  received[i] = "__________";
   hops[i] = received[i];
 }
 
@@ -499,20 +495,20 @@ while(true) {
         dups++;
     }
     received[source] = received[source].substr(0, seqno) + dups +
-        received[source].substr(seqno + 1, toReceive - seqno);
+        received[source].substr(seqno + 1, 10 - seqno);
 
     if(hop &gt; 9) {
         hop = "+";
     }
     hops[source] = hops[source].substr(0, seqno) + hop +
-        hops[source].substr(seqno + 1, toReceive - seqno);
+        hops[source].substr(seqno + 1, 10 - seqno);
 
     total_received++;
     total_hops += hop;
     
     print_stats();
   }
-  /* Signal OK if all nodes have reported toReceive messages. */
+  /* Signal OK if all nodes have reported 10 messages. */
   num_reported = 0;
   for(i = 1; i &lt;= nrNodes; i++) {
       if(i != sink) {

@@ -53,6 +53,10 @@
  * @{
  */
 #define IEEE_ADDR_LOCATION_PRIMARY   0x00280028 /**< IEEE address location */
+#define IEEE_ADDR_LOCATION_FLASH     0x0027FFCC /* If an IEEE address
+                                                   has been written to
+                                                   flash, this will be
+                                                   its location. */
 /** @} */
 /*---------------------------------------------------------------------------*/
 /*

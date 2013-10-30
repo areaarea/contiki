@@ -20,10 +20,9 @@
 *.mbxxx
 *.win32
 *.apple2enh
-*.atarixl
+*.atari
 *.c128
 *.c64
-*.cc2538dk
 *.report
 summary
 *.summary

@@ -52,13 +52,6 @@
  */
 #define UART_0_BASE           0x4000C000
 #define UART_1_BASE           0x4000D000
-
-/* Default to UART 0 unless the configuration tells us otherwise */
-#ifdef UART_CONF_BASE
-#define UART_BASE             UART_CONF_BASE
-#else
-#define UART_BASE             UART_0_BASE
-#endif
 /** @} */
 /*---------------------------------------------------------------------------*/
 /**
@@ -73,8 +66,8 @@
 #define UART_FBRD_115200             44 /**< FBRD value for baud rate 115200 */
 #define UART_IBRD_230400              4 /**< IBRD value for baud rate 230400 */
 #define UART_FBRD_230400             22 /**< FBRD value for baud rate 230400 */
-#define UART_IBRD_460800              2 /**< IBRD value for baud rate 460800 */
-#define UART_FBRD_460800             11 /**< FBRD value for baud rate 460800 */
+#define UART_IBRD_460800              2 /**< IBRD value for baud rate 230400 */
+#define UART_FBRD_460800             11 /**< FBRD value for baud rate 230400 */
 
 #if UART_CONF_BAUD_RATE==115200
 #define UART_CONF_IBRD UART_IBRD_115200

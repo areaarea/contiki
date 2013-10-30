@@ -70,6 +70,7 @@ extern struct uip_fallback_interface UIP_FALLBACK_INTERFACE;
 
 #if UIP_CONF_IPV6_RPL
 #include "rpl/rpl.h"
+#include "rpl/rpl-private.h"
 #endif
 
 process_event_t tcpip_event;
@@ -421,6 +422,7 @@ eventhandler(process_event_t ev, process_data_t data)
       break;
 
     case PROCESS_EVENT_TIMER:
+      uip_len = 0;
       /* We get this event if one of our timers have expired. */
       {
         /* Check the clock so see if we should call the periodic uIP
@@ -693,7 +695,7 @@ tcpip_ipv6_output(void)
         return;
       }
       /* Send in parallel if we are running NUD (nbc state is either STALE,
-         DELAY, or PROBE). See RFC 4861, section 7.3.3 on node behavior. */
+         DELAY, or PROBE). See RFC 4861, section 7.7.3 on node behavior. */
       if(nbr->state == NBR_STALE) {
         nbr->state = NBR_DELAY;
         stimer_set(&nbr->reachable, UIP_ND6_DELAY_FIRST_PROBE_TIME);

@@ -548,7 +548,7 @@ rpl_add_parent(rpl_dag_t *dag, rpl_dio_t *dio, uip_ipaddr_t *addr)
     p->dag = dag;
     p->rank = dio->rank;
     p->dtsn = dio->dtsn;
-    p->link_metric = RPL_INIT_LINK_METRIC * RPL_DAG_MC_ETX_DIVISOR;
+    p->link_metric = RPL_INIT_LINK_METRIC;
 #if RPL_DAG_MC != RPL_DAG_MC_NONE
     memcpy(&p->mc, &dio->mc, sizeof(p->mc));
 #endif /* RPL_DAG_MC != RPL_DAG_MC_NONE */
@@ -1055,6 +1055,7 @@ rpl_recalculate_ranks(void)
 {
   rpl_parent_t *p;
 
+  //  PRINTF("RPL: rpl_recalculate_ranks\n");
   /*
    * We recalculate ranks when we receive feedback from the system rather
    * than RPL protocol messages. This periodical recalculation is called

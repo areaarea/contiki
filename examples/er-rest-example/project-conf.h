@@ -40,9 +40,16 @@
 #undef NETSTACK_CONF_RDC
 #define NETSTACK_CONF_RDC     nullrdc_driver
 
-/* Increase rpl-border-router IP-buffer when using more than 64. */
-#undef REST_MAX_CHUNK_SIZE
+/* Save some memory for the sky platform. */
+#undef UIP_CONF_DS6_NBR_NBU
+#define UIP_CONF_DS6_NBR_NBU     10
+#undef UIP_CONF_MAX_ROUTES
+#define UIP_CONF_MAX_ROUTES   10
+
+/* Increase rpl-border-router IP-buffer when using 128. */
+#ifndef REST_MAX_CHUNK_SIZE
 #define REST_MAX_CHUNK_SIZE    64
+#endif /* REST_MAX_CHUNK_SIZE */
 
 /* Estimate your header size, especially when using Proxy-Uri. */
 /*

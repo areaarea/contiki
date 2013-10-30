@@ -60,7 +60,7 @@ The platform has been developed and tested under Windows XP, Mac OS X 10.7 and U
 
 Install a Toolchain
 -------------------
-The toolchain used to build contiki is arm-gcc (Sourcery CodeBench), also used by other arm-based Contiki ports. If you are using Instant Contiki, you will have this pre-installed in your system. To find out if this is the case, try this:
+The toolchain used to build contiki is arm-gcc (Sorcery CodeBench), also used by other arm-based Contiki ports. If you are using Instant Contiki, you will have this pre-installed in your system. To find out if this is the case, try this:
 
     $ arm-none-eabi-gcc -v
     Using built-in specs.
@@ -94,7 +94,7 @@ You will need to install XDS drivers if you want to do anything useful with the 
 
             $ lsusb
             ...
-            Bus 001 Device 002: ID 0403:a6d1 Future Technology Devices International, Ltd
+            Bus 001 Device 002: ID 0403:a6d1 Future Technology Devices International, Ltd 
             ...
 
 
@@ -195,11 +195,9 @@ On Linux:
 
 Software to Program the Nodes
 -----------------------------
-On Windows, nodes can be programmed with TI's ArmProgConsole or the [SmartRF Flash Programmer][smart-rf-flashprog]. The README should be self-explanatory. With ArmProgConsole, upload the file with a `.bin` extension.
+On Windows, nodes can be programmed with TI's [ArmProgConsole/SmartRF Flash Programmer][prog-tool]. The README should be self-explanatory. With ArmProgConsole, upload the file with a `.cc2538dk` extension.
 
 On Linux, nodes can be programmed with TI's [UniFlash] tool. With UniFlash, use the file with `.elf` extension.
-
-The file with a `.cc2538dk` extension is a copy of the `.elf` file.
 
 Use the Port
 ============
@@ -229,40 +227,39 @@ and the related bug report here:
 
 Build your First Examples
 -------------------------
-It is recommended to start with the `cc2538-demo` and `timer-test` examples under `examples/cc2538dk/`. These are very simple examples which will help you get familiar with the hardware and the environment.
+It is recommended to start with the `cc2538-demo` and `timer-test` examples under `examples/cc2538dk/`. These are very simple examples which will help you get familiar with the hardware and the environment. 
 
 Strictly speaking, to build them you need to run `make TARGET=cc2538dk`. However, the example directories contain a `Makefile.target` which is automatically included and specifies the correct `TARGET=` argument. Thus, for examples under the `cc2538dk` directory, you can simply run `make`.
 
 For the `cc2538-demo`, the comments at the top of `cc2538-demo.c` describe in detail what the example does.
 
-Node IEEE/RIME/IPv6 Addresses
------------------------------
+Node MAC/RIME/IPv6 Addresses
+-----------------------
 
-Nodes will generally autoconfigure their IPv6 address based on their IEEE address. The IEEE address can be read directly from the CC2538 Info Page, or it can be hard-coded. Additionally, the user may specify a 2-byte value at build time, which will be used as the IEEE address' 2 LSBs.
+Nodes will generally autoconfigure their IPv6 address based on their MAC address. The MAC address can be read directly from one of two possible locations on the CC2538 Info Page, or it can be hard-coded. Additionally, the user may specify a 2-byte value at build time, which will be used as the MAC address' 2 LSBs.
 
-To configure the IEEE address source location (Info Page or hard-coded), use the `IEEE_ADDR_CONF_HARDCODED` define in contiki-conf.h:
+To configure the MAC address source location (Info Page or hard-coded), use the `IEEE_CONF_ADDR_LOCATION` define in contiki-conf.h:
 
-* 0: Info Page
-* 1: Hard-coded
+* 0: Primary Info Page location
+* 1: Secondary Info Page location
+* 2: Hard-coded (in `ieee-addr.c::ieee_addr_read()`)
 
-If `IEEE_ADDR_CONF_HARDCODED` is defined as 1, the IEEE address will take its value from the `IEEE_ADDR_CONF_ADDRESS` define.
-
-Additionally, you can override the IEEE's 2 LSBs, by using the `NODEID` make variable. The value of `NODEID` will become the value of the `IEEE_ADDR_NODE_ID` pre-processor define. If `NODEID` is not defined, `IEEE_ADDR_NODE_ID` will not get defined either. For example:
+To override the MAC's 2 LSBs, use the `NODEID` make variable. The value of `NODEID` will become the value of the `IEEE_ADDR_NODE_ID` pre-processor define. If `NODEID` is not defined, `IEEE_ADDR_NODE_ID` will not get defined either. For example:
 
     make NODEID=0x79ab
 
-This will result in the 2 last bytes of the IEEE address getting set to 0x79 0xAB
+This will result in the 2 last bytes of the MAC address getting set to 0x79 0xAB
 
-Note: Some early production devices do not have am IEEE address written on the Info Page. For those devices, using value 0 above will result in a Rime address of all 0xFFs. If your device is in this category, define `IEEE_ADDR_CONF_HARDCODED` to 1 and specify `NODEID` to differentiate between devices.
+Note: Some early production devices do not have a MAC address written on the Info Page. For those devices, using values 0 or 1 above will result in a MAC address of all 0xFFs. If your device is in this category, use value 2 for `IEEE_CONF_ADDR_LOCATION` and specify `NODEID` to differentiate between devices.
 
 ### Scripted multi-image builds
 
-You can build multiple nodes with different `NODEID`s sequentially. The only platform file relying on the value of `NODEID` (or more accurately `IEEE_ADDR_NODE_ID`) is `ieee-addr.c`, which will get recompiled at each build invocation. As a result, the build system can be scripted to build multiple firmware images, each one with a different MAC address. Bear in mind that, if you choose to do such scripting, you will need to make a copy of each firmware before invoking the next build, since each new image will overwrite the previous one. Thus, for example, you could do something like this:
+You can build multiple nodes with different `NODEID`s sequentially. The only platform file relying on the value of `NODEID` (or more accurately `IEEE_ADDR_NODE_ID`) is `ieee-addr.c`, which will get recompiled at each build invocation. As a result, the build system can be scripted to build you multiple firmware images, each one with a different MAC address. Bear in mind that, if you choose to do such scripting, you will need to make a copy of each firmware before invoking the next build, since each new image will overwrite the previous one. Thus, for example, you could do something like this:
 
     for image in 1 2 3 4; do make cc2538-demo NODEID=$image && \
     cp cc2538-demo.cc2538dk cc2538-demo-$image.cc2538dk; done
 
-Which would build `cc2538-demo-1.cc2538dk`, `cc2538-demo-2.cc2538dk` etc
+Which would build you `cc2538-demo-1.cc2538dk`, `cc2538-demo-2.cc2538dk` etc
 
 As discussed above, only `ieee-addr.c` will get recompiled for every build. Thus, if you start relying on the value of `IEEE_ADDR_NODE_ID` in other code modules, this trick will not work off-the-shelf. In a scenario like that, you would have to modify your script to touch those code modules between every build. For instance, if you are using an imaginary `foo.c` which needs to see changes to `NODEID`, the script above could be modified like so:
 
@@ -275,8 +272,7 @@ Build a 6LoWPAN Testbed
 -----------------------
 Once you are familiar with the basics, get a mini 6LoWPAN testbed.
 
-Start by building a border router from `examples/ipv6/rpl-border-router`
-
+1. Build a border router from `examples/ipv6/rpl-border-router`
   * Turn on debugging output by changing `#define DEBUG DEBUG_NONE` to `#define DEBUG DEBUG_PRINT` in `border-router.c`.
   * The border router's configuration (`project-conf.h`), sets the maximum size of the uIP buffer (`UIP_CONF_BUFFER_SIZE`). This is a bit restrictive for this platform: we can afford to allocate more memory of we want to. It's not necessary, but feel free to remove the lines below from `project-conf.h`, allowing the platform to use its own default value.
 
@@ -285,7 +281,7 @@ Start by building a border router from `examples/ipv6/rpl-border-router`
         #endif
 
   * `make TARGET=cc2538dk`
-  * Flash your device with `border-router.cc2538dk` or `border-router.bin`.
+  * Flash your device with `border-router.cc2538dk` or `border-router.elf`.
   * Connect device to Linux or OS X over its XDS port.
   * `cd $(CONTIKI)/tools`
   * `make tunslip6`
@@ -301,20 +297,16 @@ Start by building a border router from `examples/ipv6/rpl-border-router`
 
   * `ping6 <address>`
   * `curl -g "http://[<address-inside-the-brackets>]"` and the border router will serve you a web-page. Try from a browser too.
-
-Afterwards, build RPL nodes in `examples/cc2538dk/udp-ipv6-echo-server`
-
+2. Build RPL nodes in `examples/cc2538dk/udp-ipv6-echo-server`
   * If you are not reading node MAC addresses from the Info Page, make sure you assign a new MAC address for each node by passing `NODEID=xyz` to the make command line, as discussed in an earlier section.
   * `make` (or `make NODEID=xyz`). You don't need to specify `TARGET=` as this is saved in `Makefile.target`
-  * Flash device with `udp-echo-server.cc2538dk` or `.bin`.
+  * Flash device with `udp-echo-server.cc2538dk` or `.elf`.
   * If you want to see console output, connect the device to a PC over its XDS port. You don't need to do that though, this example will work on 'headless' nodes. This may be a good chance to try out your BB, if you have one.
-  * Repeat for more nodes, each one with a new `NODEID` if necessary.
-
-More things to play around with
-
-  * Feel free to throw some webservers in the mix. In `examples/webserver-ipv6`, run `make TARGET=cc2538dk NODEID=<value>`
-  * `ping6` and `netcat` the RPL nodes (the echo server listens on UDP 3000): `nc -6u <address> 3000`
-  * Retrieve a webpage from a node. Use `curl` as above, or you can `wget` or you can fire up a browser and navigate to the websever's address.
+3. Repeat 2. for more nodes, each one with a new `NODEID` if necessary.
+4. Feel free to throw some webservers in the mix. In `examples/webserver-ipv6`, run `make TARGET=cc2538dk NODEID=<value>`
+5. `ping6` and `netcat` the RPL nodes (the echo server listens on UDP 3000):
+  * `nc -6u <address> 3000`
+6. Retrieve a webpage from a node. Use `curl` as above, or you can `wget` or you can fire up a browser and navigate to the websever's address
 
 Build a Sniffer - Live Traffic Capture with Wireshark
 -----------------------------------------------------
@@ -376,13 +368,7 @@ Transfers between RAM and the RF and USB will be conducted with DMA. If for what
 
 Low-Power Modes
 ---------------
-The CC2538 port supports power modes for low energy consumption. The SoC will enter a low power mode as part of the main loop when there are no more events to service.
-
-LPM support can be disabled in its entirety by setting `LPM_CONF_ENABLE` to 0 in `contiki-conf.h` or `project-conf.h`.
-
-NOTE: If you are using PG2 version of the Evaluation Module, the SoC will refuse to enter Power Modes 1+ if the debugger is connected and will always enter PM0 regardless of configuration. In order to get real low power mode functionality, make sure the debugger is disconnected. The Battery Board is ideal to test this.
-
-The Low-Power module uses a simple heuristic to determine the best power mode, depending on anticipated Deep Sleep duration and the state of various peripherals.
+The CC2538 port supports power modes for low energy consumption. The SoC will enter a low power mode as part of the main loop when there are no more events to service. The Low-Power module uses a simple heuristic to determine the best power mode, depending on anticipated Deep Sleep duration and the state of various peripherals.
 
 In a nutshell, the algorithm first answers the following questions:
 
@@ -394,13 +380,15 @@ If the answer to any of the above question is "No", the SoC will enter PM0. If t
 
 At runtime, the application may enable/disable some Power Modes by making calls to `lpm_set_max_pm()`. For example, to avoid PM2 an application could call `lpm_set_max_pm(1)`. Subsequently, to re-enable PM2 the application would call `lpm_set_max_pm(2)`.
 
-The LPM module can be configured with a hard maximum permitted power mode.
+The LPM module can be configured with a hard maximum permitted power mode. This is a configuration directive set in `lpm-conf.h`.
 
     #define LPM_CONF_MAX_PM        N
 
 Where N corresponds to the PM number. Supported values are 0, 1, 2. PM3 is not supported. Thus, if the value of the define is 1, the SoC will only ever enter PMs 0 or 1 but never 2 and so on.
 
 The configuration directive `LPM_CONF_MAX_PM` sets a hard upper boundary. For instance, if `LPM_CONF_MAX_PM` is defined as 1, calls to `lpm_set_max_pm()` can only enable/disable PM1. In this scenario, PM2 can not be enabled at runtime.
+
+The reason why this configuration resides in this file and not in `contiki-conf.h` is because this file is also used to automatically generate the correct linker script at build-time. Do not try to move this configuration to a different file as this is likely to break things. Do not try to change the value of `LPM_CONF_MAX_PM` in `project-conf.h` or `contiki-conf.`h as this will not work.
 
 When setting `LPM_CONF_MAX_PM` to 0 or 1, the entire SRAM will be available. Crucially, when value 2 is used the linker will automatically stop using the SoC's SRAM non-retention area, resulting in a total available RAM of 16MB instead of 32MB.
 
@@ -449,12 +437,13 @@ If you prefer this guide in other formats, use the excellent [pandoc] to convert
 More Reading
 ============
 1. [SmartRF06 Evaluation Board User's Guide, (SWRU321)][smart-rf-ug]
-2. [CC2538 System-on-Chip Solution for 2.4-GHz IEEE 802.15.4 and ZigBee&reg;/ZigBee IP&reg; Applications, (SWRU319B)][cc2538]
+2. CC2538 System-on-Chip Solution for 2.4-GHz IEEE 802.15.4 and ZigBee&reg;/ZigBee IP&reg; Applications, (SWRU319A)
 
-[smart-rf-studio]: http://www.ti.com/tool/smartrftm-studio "SmartRF Studio"
-[smart-rf-flashprog]: http://www.ti.com/tool/flash-programmer "SmartRF Flash Programmer"
-[smart-rf-ug]: http://www.ti.com/litv/pdf/swru321a     "SmartRF06 Evaluation Board User's Guide"
-[cc2538]: http://www.ti.com/product/cc2538     "CC2538"
+[smart-rf-studio]: http://fill.me.soon "SmartRF"
+[smart-rf-ug]: http://www.ti.com/litv/pdf/swru321     "SmartRF06 Evaluation Board User's Guide"
+[cc2538-ug]: http://fill.me.soon     "CC2538 System-on-Chip User Guide"
+[prog-tool]: http://fill.me.soon     "Programmer Tool - TBA"
 [uniflash]: http://processors.wiki.ti.com/index.php/Category:CCS_UniFlash "UniFlash"
 [pandoc]: http://johnmacfarlane.net/pandoc/ "Pandoc - a universal document converter"
 [lpp-rf-off-bug]: https://github.com/contiki-os/contiki/issues/104 "LPP RF off() bug"
+

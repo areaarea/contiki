@@ -33,7 +33,9 @@
  * stage. Rather, it is used as input for the auto-generation of the actual
  * ld script, which is called cc2538.ld and will be in the project directory
  */
-#if (LPM_CONF_MAX_PM==2) && (LPM_CONF_ENABLE != 0)
+#include "lpm-conf.h"
+
+#if LPM_CONF_MAX_PM==2
 #define SRAM_START  0x20004000
 #define SRAM_LEN    0x00004000
 #else
@@ -45,7 +47,7 @@ MEMORY
 {
     FLASH (rx) : ORIGIN = 0x200000, LENGTH = 0x0007FFD4
     FLASH_CCA (RX) : ORIGIN = 0x0027FFD4, LENGTH = 12
-    SRAM (RWX) : ORIGIN = SRAM_START, LENGTH = SRAM_LEN
+    SRAM (RWX) : ORIGIN = SRAM_START, LENGTH = SRAM_LEN 
 }
 
 SECTIONS

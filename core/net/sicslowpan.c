@@ -71,8 +71,7 @@
 
 #include <stdio.h>
 
-#define DEBUG DEBUG_NONE
-#include "net/uip-debug.h"
+#define DEBUG 0
 #if DEBUG
 /* PRINTFI and PRINTFO are defined for input and output to debug one without changing the timing of the other */
 uint8_t p;
@@ -88,6 +87,8 @@ uint8_t p;
 #define PRINTPACKETBUF()
 #define PRINTUIPBUF()
 #define PRINTSICSLOWPANBUF()
+#define PRINTF(...)
+#define PRINT6ADDR(...)
 #endif /* DEBUG == 1*/
 
 #if UIP_LOGGING
@@ -1488,6 +1489,7 @@ output(uip_lladdr_t *localdest)
     q = queuebuf_new_from_packetbuf();
     if(q == NULL) {
       PRINTFO("could not allocate queuebuf for first fragment, dropping packet\n");
+      RIMESTATS_ADD(sicslowpandrops);
       return 0;
     }
     send_packet(&dest);
@@ -1500,6 +1502,7 @@ output(uip_lladdr_t *localdest)
        (last_tx_status == MAC_TX_ERR) ||
        (last_tx_status == MAC_TX_ERR_FATAL)) {
       PRINTFO("error in fragment tx, dropping subsequent fragments.\n");
+      RIMESTATS_ADD(sicslowpandrops);
       return 0;
     }
 
@@ -1534,6 +1537,7 @@ output(uip_lladdr_t *localdest)
       q = queuebuf_new_from_packetbuf();
       if(q == NULL) {
         PRINTFO("could not allocate queuebuf, dropping fragment\n");
+        RIMESTATS_ADD(sicslowpandrops);
         return 0;
       }
       send_packet(&dest);
@@ -1547,11 +1551,13 @@ output(uip_lladdr_t *localdest)
          (last_tx_status == MAC_TX_ERR) ||
          (last_tx_status == MAC_TX_ERR_FATAL)) {
         PRINTFO("error in fragment tx, dropping subsequent fragments.\n");
+        RIMESTATS_ADD(sicslowpandrops);
         return 0;
       }
     }
 #else /* SICSLOWPAN_CONF_FRAG */
     PRINTFO("sicslowpan output: Packet too large to be sent without fragmentation support; dropping packet\n");
+    RIMESTATS_ADD(sicslowpandrops);
     return 0;
 #endif /* SICSLOWPAN_CONF_FRAG */
   } else {
@@ -1664,7 +1670,12 @@ input(void)
    */
 #define PRIORITIZE_NEW_PACKETS 1
 #if PRIORITIZE_NEW_PACKETS
-  if(processed_ip_in_len > 0 && first_fragment
+
+  if(!is_fragment) {
+    /* Prioritize non-fragment packets too. */
+    sicslowpan_len = 0;
+    processed_ip_in_len = 0;
+  } else if(processed_ip_in_len > 0 && first_fragment
       && !rimeaddr_cmp(&frag_sender, packetbuf_addr(PACKETBUF_ADDR_SENDER))) {
     sicslowpan_len = 0;
     processed_ip_in_len = 0;
@@ -1684,6 +1695,9 @@ input(void)
        * being reassembled or the packet is not a fragment.
        */
       PRINTFI("sicslowpan input: Dropping 6lowpan packet that is not a fragment of the packet currently being reassembled\n");
+      printf("frag %d %d\n", reass_tag, frag_tag);
+      printf("drop incoming frag\n");
+      RIMESTATS_ADD(sicslowpandrops);
       return;
     }
   } else {
@@ -1758,6 +1772,7 @@ input(void)
    */
   if(packetbuf_datalen() < rime_hdr_len) {
     PRINTF("SICSLOWPAN: packet dropped due to header > total packet\n");
+    RIMESTATS_ADD(sicslowpandrops);
     return;
   }
   rime_payload_len = packetbuf_datalen() - rime_hdr_len;
@@ -1771,6 +1786,7 @@ input(void)
           "SICSLOWPAN: packet dropped, minimum required SICSLOWPAN_IP_BUF size: %d+%d+%d+%d=%d (current size: %d)\n",
           UIP_LLH_LEN, uncomp_hdr_len, (uint16_t)(frag_offset << 3),
           rime_payload_len, req_size, sizeof(sicslowpan_buf));
+      RIMESTATS_ADD(sicslowpandrops);
       return;
     }
   }

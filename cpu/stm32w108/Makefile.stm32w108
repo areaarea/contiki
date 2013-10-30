@@ -285,7 +285,7 @@ stm-motes:
 $(OBJECTDIR)/%.o: %.s79 | $(OBJECTDIR)
 	$(AS) $(ASFLAGS) -o $@ $<
 
-$(OBJECTDIR)/%.o: %.s | $(OBJECTDIR)
+$(OBJECTDIR)/%.o: %.s
 	$(AS) $(ASFLAGS) -o $@ $<
 
 %.bin: %.$(TARGET)

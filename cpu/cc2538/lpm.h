@@ -45,6 +45,7 @@
 #define LPM_H_
 
 #include "contiki-conf.h"
+#include "lpm-conf.h"
 #include "rtimer.h"
 
 #include <stdint.h>
@@ -125,6 +126,10 @@ void lpm_init(void);
  * lpm_exit(), which will always be called from within the Sleep Timer ISR
  * context.
  *
+ * \note Dropping to PM2 means that data in the SRAM Non-Retention area will
+ * be lost. It is recommended to disable PM2 if the total RAM footprint is
+ * larger than what will fit in the retention area.
+ *
  * \sa main(), rtimer_arch_next_trigger(), lpm_exit(), lpm_set_max_pm()
  */
 void lpm_enter(void);
@@ -160,8 +165,7 @@ void lpm_exit(void);
  * If an application wants to avoid PM1 as well, it would call
  * lpm_set_max_pm(LPM_PM0)
  *
- * PM0 can not be disabled at runtime. Use LPM_CONF_ENABLE to disable LPM
- * support altogether
+ * PM0 can not be disabled.
  *
  * \note If the value of argument \e pm is greater than the value of the
  *       LPM_CONF_MAX_PM configuration directive, LPM_CONF_MAX_PM is used. Thus
@@ -172,14 +176,6 @@ void lpm_exit(void);
  * \sa lpm_enter()
  */
 void lpm_set_max_pm(uint8_t pm);
-/*---------------------------------------------------------------------------*/
-/* Disable the entire module if required */
-#if LPM_CONF_ENABLE==0
-#define lpm_init()
-#define lpm_enter()
-#define lpm_exit()
-#define lpm_set_max_pm(...)
-#endif
 
 #endif /* LPM_H_ */
 
